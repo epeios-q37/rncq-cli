@@ -4,6 +4,7 @@
   <Parameters>
    <Language>fr</Language>
    <Command>Test</Command>
+   <Float>No</Float>
   </Parameters>
   <Definitions/>
   <Locale>
@@ -50,7 +51,7 @@
    <Argument id="License" Description="LicenseCommandDescription" long="license" Value="License"/>
    <Argument id="TestCommand" Description="TestCommandDescription" long="test" short="t" Value="Test" Usage="%TestFlag% %TestOption% %ExpressionArgument%"/>
    <Argument id="TestFlag" Description="TestFlagDescription" long="flag" short="f" Path="Flag" Value="TestFlag"/>
-   <Argument id="TestOption" Description="TestOptionDescription" long="option" short="o" Path="Option" Label="TestOptionLabel"/>
+   <Argument id="FloatOption" Description="FloatOptionDescription" long="float" short="f" Path="Float" Label="FloatOptionLabel"/>
    <Argument id="ExpressionArgument" Description="ExpressionArgumentDescription" Path="Expression" Label="ExpressionArgumentLabel"/>
    <Layouts>
     <Layout command="Test">

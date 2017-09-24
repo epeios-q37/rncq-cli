@@ -23,6 +23,7 @@
 
 #include "scltool.h"
 #include "sclerror.h"
+#include "sclmisc.h"
 
 #include "err.h"
 #include "cio.h"
@@ -46,179 +47,449 @@ namespace {
 	}
 
 	namespace {
-		typedef stkcrt::qCSTACKdl( mthrtn::dRational ) dRationals;
-		qW( Rationals );
-
-		typedef stkbch::qBSTACKdl( bso::lfloat__ ) dFloats;
-		qW( Floats );
-
-		typedef stkbch::qBSTACKdl( bso::sChar ) dOperators;
-		qW( Operators );
-
-		bso::sBool GetInteger_(
-			xtf::sIFlow &Flow,
-			str::dString &Number )
-		{
-			if ( Flow.EndOfFlow() )
-				return false;
-
-			switch ( Flow.View() ) {
-			case '-':
-				Number.Append( '-' );
-			case '+':
-				Flow.Get();
-			default:
-				break;
-			}
-
-			while ( !Flow.EndOfFlow() && isdigit( Flow.View() ) )
-				Number.Append( Flow.Get() );
-
-			return true;
+		namespace message_ {
+#define D( name )	qCDEF( char *, name, #name )
+			D( Overflow );
+			D( SyntaxError );
+			D( BadFloatInvolvement );
+#undef D
 		}
 
-		bso::lfloat__ GetInteger_(
-			xtf::sIFlow &Flow,
-			mthitg::dInteger &Integer )
-		{
-			bso::lfloat__ Result = 0;
-		qRH
-			str::wString String;
-		qRB
-			String.Init();
-			GetInteger_( Flow, String );
-
-			Integer.Init( String );
-
-			Result = String.ToLF();
-
-//			cio::COut << String << txf::tab << Integer << txf::nl;
-		qRR
-		qRT
-		qRE
-			return Result;
-		}
-
-		void Handle_(
-			dRationals &Rationals,
-			dFloats &Floats,
-			dOperators &Operators )
-		{
-		qRH
-			mthrtn::wRational ROp1, ROp2, RResult;
-			bso::lfloat__ FOp1, FOp2, FResult;
-		qRB
-			if ( Operators.Amount() == 0 )
-				qRFwk();
-
-			if ( Rationals.Amount() < 2 )
-				qRFwk();
-
-			ROp1.Init();
-			ROp2.Init();
-
-			RResult.Init();
-
-			Rationals.Pop( ROp2 );
-			Rationals.Pop( ROp1 );
-
-			Floats.Pop( FOp2 );
-			Floats.Pop( FOp1 );
-
-			switch ( Operators.Pop() ) {
-			case '+':
-				mthrtn::Add( ROp1, ROp2, RResult );
-				FResult = FOp1 + FOp2;
-				break;
-			case '-':
-				mthrtn::Sub( ROp1, ROp2, RResult );
-				FResult = FOp1 - FOp2;
-				break;
-			case '*':
-			case 'x':
-				mthrtn::Mul( ROp1, ROp2, RResult );
-				FResult = FOp1 * FOp2;
-				break;
-			case ':':
-			case '/':
-				mthrtn::Div( ROp1, ROp2, RResult );
-				FResult = FOp1 / FOp2;
-				break;
-			default:
-				qRFwk();
-				break;
-			}
-
-			Rationals.Push( RResult );
-			Floats.Push( FResult );
-		qRR
-		qRT
-		qRE
-		}
+# define REPORT( m )	sclmisc::ReportAndAbort( message_::m )
 
 		namespace {
-			bso::lfloat__ Evaluate_(
-				xtf::sIFlow &Flow,
-				mthrtn::dRational &Rational )
+			typedef tol::dObject<bso::sLFloat> dFloat_;
+
+			class dFloat
+			: public dFloat_
 			{
-				bso::lfloat__ Float = 0;
-			qRH
-				wRationals Rationals;
-				wFloats Floats;
-				mthitg::wInteger Integer;
-				wOperators Operators;
-				bso::sChar Operator = 0;
-			qRB
-				Rationals.Init();
-				Floats.Init();
-				Operators.Init();
+			public:
+				struct s
+				: public dFloat_::s {};
+				dFloat( s &S )
+				: dFloat_( S )
+				{}
+				void Init( void )
+				{
+					S_.Object = 0;
+				}
+				void Init( const str::dString &Value )
+				{
+					sdr::sRow P = qNIL;
 
-				Integer.Init();
-				Floats.Push( GetInteger_( Flow, Integer ) );
-				Rationals.Push( mthrtn::wRational( Integer ) );
+					S_.Object = Value.ToLF( &P );
 
-				while ( !Flow.EndOfFlow() ) {
-					Operator = Flow.Get();
-					Operators.Push( Operator );
+					if ( P != qNIL ) {
+						if ( isdigit( *P ) )
+							REPORT( Overflow );
+						else
+							REPORT( SyntaxError );
+					}
+				}
+			};
 
-					Integer.Init();
-					Floats.Push( GetInteger_( Flow, Integer ) );
-					Rationals.Push( mthrtn::wRational( Integer ) );
+			qW( Float );
 
-					Handle_( Rationals, Floats, Operators );
+			typedef stkbch::qBSTACKdl( bso::sChar ) dOperators_;
+			qW( Operators_ );
+
+			void GetNumber_(
+				xtf::sIFlow &Flow,
+				str::dString *Number )
+			{
+				if ( Flow.EndOfFlow() )
+					return;
+
+				switch ( Flow.View() ) {
+				case '-':
+					Number->Append( '-' );
+				case '+':
+					Flow.Get();
+				default:
+					break;
 				}
 
-				if ( Rationals.Amount() != 1 )
-					qRFwk();
+				while ( !Flow.EndOfFlow() && isdigit( Flow.View() ) )
+					Number->Append( Flow.Get() );
+			} 
 
-				Rationals.Pop( Rational );
-				Rational.Simplify();
+			inline void GetNumber_(
+				xtf::sIFlow &Flow,
+				str::dString &Number )
+			{
+				return GetNumber_( Flow, &Number );
+			}
 
-				Floats.Pop( Float );
+			inline void GetNumber_(
+				xtf::sIFlow &Flow,
+				str::wString &Number )
+			{
+				return GetNumber_( Flow, &Number );
+			}
+
+			template <typename type> void  GetNumber_(
+				xtf::sIFlow &Flow,
+				type &Number )
+			{
+			qRH
+				str::wString String;
+			qRB
+				String.Init();
+				GetNumber_( Flow, String );
+
+				Number.Init( String );
 			qRR
 			qRT
 			qRE
-				return Float;
+			}
+
+			inline void Add_(
+				const mthrtn::dRational &Op1,
+				const mthrtn::dRational &Op2,
+				mthrtn::dRational &Result )
+			{
+				mthrtn::Add( Op1, Op2, Result );
+			}
+
+			inline void Sub_(
+				const mthrtn::dRational &Op1,
+				const mthrtn::dRational &Op2,
+				mthrtn::dRational &Result )
+			{
+				mthrtn::Sub( Op1, Op2, Result );
+			}
+
+			inline void Mul_(
+				const mthrtn::dRational &Op1,
+				const mthrtn::dRational &Op2,
+				mthrtn::dRational &Result )
+			{
+				mthrtn::Mul( Op1, Op2, Result );
+			}
+
+			inline void Div_(
+				const mthrtn::dRational &Op1,
+				const mthrtn::dRational &Op2,
+				mthrtn::dRational &Result )
+			{
+				mthrtn::Div( Op1, Op2, Result );
+			}
+
+			inline void Add_(
+				const dFloat &Op1,
+				const dFloat &Op2,
+				dFloat &Result )
+			{
+				Result.S_.Object = Op1.S_.Object + Op2.S_.Object;
+			}
+
+			inline void Sub_(
+				const dFloat &Op1,
+				const dFloat &Op2,
+				dFloat &Result )
+			{
+				Result.S_.Object = Op1.S_.Object - Op2.S_.Object;
+			}
+
+			inline void Mul_(
+				const dFloat &Op1,
+				const dFloat &Op2,
+				dFloat &Result )
+			{
+				Result.S_.Object = Op1.S_.Object * Op2.S_.Object;
+			}
+
+			inline void Div_(
+				const dFloat &Op1,
+				const dFloat &Op2,
+				dFloat &Result )
+			{
+				Result.S_.Object = Op1.S_.Object / Op2.S_.Object;
+			}
+
+			inline void Print_(
+				bso::lfloat__ Float,
+				txf::sOFlow &Flow )
+			{
+				char Buffer[1000];
+
+				sprintf( Buffer, "%LF", Float );
+				Flow << Buffer << txf::nl;
+
+				sprintf( Buffer, "%LG", Float );
+				Flow << Buffer;
+			}
+
+			template <typename wnumber, typename dnumbers> void Handle_(
+				dnumbers &Numbers,
+				bso::sChar Operator )
+			{
+			qRH
+				wnumber Op1, Op2, Result;
+			qRB
+				if ( Numbers.Amount() < 2 )
+					qRFwk();
+
+				Op1.Init();
+				Op2.Init();
+
+				Result.Init();
+
+				Numbers.Pop( Op2 );
+				Numbers.Pop( Op1 );
+
+				switch ( Operator ) {
+				case '+':
+					Add_( Op1, Op2, Result );
+					break;
+				case '-':
+					Sub_( Op1, Op2, Result );
+					break;
+				case '*':
+				case 'x':
+					Mul_( Op1, Op2, Result );
+					break;
+				case ':':
+				case '/':
+					Div_( Op1, Op2, Result );
+					break;
+				default:
+					qRFwk();
+					break;
+				}
+
+				Numbers.Push( Result );
+			qRR
+			qRT
+			qRE
+			}
+
+			namespace algebraic_ {
+				namespace {
+					template <typename dnumber, typename wnumber, typename dnumbers> void Handle_(
+						dnumbers &Numbers,
+						dOperators_ &Operators )
+					{
+						::Handle_<wnumber, dnumbers>( Numbers, Operators.Pop() );
+					}
+				}
+
+				template <typename dnumber, typename wnumber, typename dnumbers, typename wnumbers> void Evaluate(
+					xtf::sIFlow &Flow,
+					dnumber &Rational )
+				{
+				qRH
+					wnumbers Numbers;
+					wnumber Number;
+					wOperators_ Operators;
+					bso::sChar Operator = 0;
+				qRB
+					Numbers.Init();
+					Operators.Init();
+
+					Number.Init();
+					GetNumber_( Flow, Number );
+					Numbers.Push( Number );
+
+					while ( !Flow.EndOfFlow() ) {
+						Operator = Flow.Get();
+						Operators.Push( Operator );
+
+						Number.Init();
+						GetNumber_( Flow, Number );
+						Numbers.Push( Number );
+
+						Handle_<dnumber, wnumber, dnumbers>( Numbers, Operators );
+					}
+
+					if ( Numbers.Amount() != 1 )
+						qRFwk();
+
+					Numbers.Pop( Rational );
+				qRR
+				qRT
+				qRE
+				}
+			}
+
+			namespace rpn_ {
+				template <typename dnumber, typename wnumber, typename dnumbers, typename wnumbers> void Evaluate(
+					xtf::sIFlow &Flow,
+					dnumber &Rational )
+				{
+				qRH
+					wnumbers Numbers;
+					wnumber Number;
+					wOperators_ Operators;
+					bso::sChar Operator = 0;
+				qRB
+					Numbers.Init();
+					Operators.Init();
+
+					Number.Init();
+					GetNumber_( Flow, Number );
+					Numbers.Push( Number );
+
+					while ( !Flow.EndOfFlow() ) {
+						if ( isdigit( Flow.View() ) ) {
+							Number.Init();
+							GetNumber_( Flow, Number );
+							Numbers.Push( Number );
+						} else {
+							Operator = Flow.Get();
+
+							if ( Operator == '@' ) {
+								Number.Init();
+								GetNumber_( Flow, Number );
+								Numbers.Push( Number );
+							} else
+								Handle_<wnumber, dnumbers>( Numbers, Operator );
+						}
+					}
+
+					if ( Numbers.Amount() != 1 )
+						qRFwk();
+
+					Numbers.Pop( Rational );
+				qRR
+				qRT
+				qRE
+				}
+			}
+
+			template <typename dnumber, typename wnumber, typename dnumbers, typename wnumbers> void Evaluate_(
+				xtf::sIFlow &Flow,
+				dnumber &Number )
+			{
+				rpn_::Evaluate<dnumber, wnumber, dnumbers, wnumbers>( Flow, Number );
+			}
+
+			typedef stkcrt::qCSTACKdl( mthrtn::dRational ) dRationals_;
+
+			qW( Rationals_ );
+			typedef stkcrt::qMCSTACKdl( dFloat_ ) dFloats_;
+			qW( Floats_ );
+		}
+
+		namespace rational_ {
+			void Evaluate(
+				xtf::sIFlow &IFlow,
+				bso::sBool ResultWithFloat,
+				txf::sOFlow &OFlow )
+			{
+			qRH
+				mthrtn::wRational Result;
+			qRB
+				Result.Init();
+				Evaluate_<mthrtn::dRational, mthrtn::wRational, dRationals_, wRationals_>( IFlow, Result );
+
+				Result.Simplify();
+
+				if ( ResultWithFloat )
+					Print_( Result.GetLongFloat(), OFlow );
+				else
+					OFlow << Result.N << " / " << Result.D << txf::nl;
+			qRR
+			qRT
+			qRE
 			}
 		}
 
-		bso::lfloat__ Evaluate_(
-			const str::dString &Expression,
-			mthrtn::dRational &Rational )
-		{
-			bso::lfloat__ Float = 0;
-		qRH
-			flx::sStringIFlow Flow;
-			xtf::sIFlow XFlow;
-		qRB
-			Flow.Init( Expression );
-			XFlow.Init( Flow, utf::f_Guess );
+		namespace float_ {
+			void Evaluate(
+				xtf::sIFlow &IFlow,
+				txf::sOFlow &OFlow )
+			{
+			qRH
+				wFloat Result;
+			qRB
+				Result.Init();
+				Evaluate_<dFloat, wFloat, dFloats_, wFloats_>( IFlow, Result );
 
-			Float = Evaluate_( XFlow, Rational );
+				Print_( Result.S_.Object, OFlow );
+			qRR
+			qRT
+			qRE
+			}
+		}
+
+		namespace floatp_ {
+			qENUM( Involvement )
+			{
+				iNo,		//	No involvement at all.
+				iResult,	// Conversion of the result.
+				iAll,		// All calculation are made with floats.
+				i_amount,
+				i_Undefined
+			};
+
+			namespace {
+				stsfsm::wAutomat Automat_;
+
+				const char *GetLabel_( eInvolvement Involvement )
+				{
+					switch ( Involvement ) {
+#define C( name )	case i##name : return #name; break
+						C( No );
+						C( Result );
+						C( All );
+#undef C
+					default:
+						qRFwk();
+						break;
+					}
+
+					return NULL;	// To avoid a warning.
+				}
+			}
+
+			void Fill( void )
+			{
+				Automat_.Init();
+
+				stsfsm::Fill( Automat_, i_amount, GetLabel_ );
+			}
+
+			eInvolvement GetInvolvement( const str::dString &Pattern )
+			{
+				return stsfsm::GetId( Pattern, Automat_, i_Undefined, i_amount );
+			}
+		}
+
+		void Evaluate_(
+			const str::dString &Expression,
+			txf::sOFlow &Flow )
+		{
+		qRH
+			flx::sStringIFlow SFlow;
+			xtf::sIFlow XFlow;
+			bso::sBool Float = false;
+			str::wString Involvement;
+		qRB
+			SFlow.Init( Expression );
+			XFlow.Init( SFlow, utf::f_Guess );
+
+			floatp_::Fill();
+			Involvement.Init();
+			sclmisc::MGetValue( registry::parameter::Float, Involvement );
+
+			switch ( floatp_::GetInvolvement( Involvement ) ) {
+			case floatp_::iNo:
+				rational_::Evaluate( XFlow, false, Flow );
+				break;
+			case floatp_::iResult:
+				rational_::Evaluate( XFlow, true, Flow );
+				break;
+			case floatp_::iAll:
+				float_::Evaluate( XFlow, cio::COut );
+				break;
+			default:
+				REPORT( BadFloatInvolvement );
+				break;
+			}
 		qRR
 		qRT
 		qRE
-			return Float;
 		}
 	}
 
@@ -226,15 +497,13 @@ namespace {
 	{
 	qRH
 		str::wString Expression;
-		mthrtn::wRational Result;
-		bso::lfloat__ Float = 0;
 	qRB
 		Expression.Init();
 		sclmisc::MGetValue( registry::parameter::Expression, Expression );
 
-		Result.Init();
-		Float = Evaluate_( Expression, Result );
-		cio::COut << '=' << Result.N << '/' << txf::nl << Result.D << txf::nl << Result.ToLongFloat() << txf::tab << Float << txf::nl;
+		Evaluate_( Expression, cio::COut );
+
+		cio::COut.Commit();
 	qRR
 	qRT
 	qRE
