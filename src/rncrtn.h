@@ -26,6 +26,11 @@
 # include "xtf.h"
 
 namespace rncrtn {
+	typedef stkcrt::qCSTACKdl( mthrtn::dRational ) dRationals;
+	qW( Rationals );
+}
+
+namespace rnc {
 	inline bso::sBool GetNumber_(
 		xtf::sIFlow &Flow,
 		mthrtn::dRational &Number )
@@ -66,9 +71,6 @@ namespace rncrtn {
 	{
 		mthrtn::Div( Op1, Op2, Result );
 	}
-
-	typedef stkcrt::qCSTACKdl( mthrtn::dRational ) dRationals;
-	qW( Rationals );
 }
 
 #endif

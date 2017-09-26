@@ -55,6 +55,23 @@ namespace rncflt {
 	typedef stkcrt::qMCSTACKdl( dFloat_ ) dFloats;
 	qW( Floats );
 
+	inline void Print_(
+		bso::lfloat__ Float,
+		txf::sOFlow &Flow )
+	{
+		char Buffer[1000];
+
+		sprintf( Buffer, "%LF", Float );
+		Flow << Buffer << txf::nl;
+
+		sprintf( Buffer, "%LG", Float );
+		Flow << Buffer;
+	}
+}
+
+namespace rnc{
+	using rncflt::dFloat;
+
 	inline bso::sBool GetNumber_(
 		xtf::sIFlow &Flow,
 		str::dString &Number )
@@ -89,7 +106,7 @@ namespace rncflt {
 
 	inline bso::sBool GetNumber_(
 		xtf::sIFlow &Flow,
-		dFloat &Number )
+		rncflt::dFloat &Number )
 	{
 		bso::sBool Success = false;
 	qRH
@@ -104,7 +121,6 @@ namespace rncflt {
 	qRE
 		return Success;
 	}
-
 	inline void Add_(
 		const dFloat &Op1,
 		const dFloat &Op2,
@@ -135,19 +151,6 @@ namespace rncflt {
 		dFloat &Result )
 	{
 		Result.S_.Object = Op1.S_.Object / Op2.S_.Object;
-	}
-
-	inline void Print_(
-		bso::lfloat__ Float,
-		txf::sOFlow &Flow )
-	{
-		char Buffer[1000];
-
-		sprintf( Buffer, "%LF", Float );
-		Flow << Buffer << txf::nl;
-
-		sprintf( Buffer, "%LG", Float );
-		Flow << Buffer;
 	}
 }
 

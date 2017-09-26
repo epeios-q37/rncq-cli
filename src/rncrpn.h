@@ -38,28 +38,28 @@ namespace rncrpn {
 		wOperators Operators;
 		bso::sChar Operator = 0;
 	qRB
-		SkipSpaces_( Flow );
+		rnccmn::SkipSpaces_( Flow );
 
 		Numbers.Init();
 		Operators.Init();
 
 		Number.Init();
 
-		if ( !GetNumber_( Flow, Number ) )
+		if ( !rnc::GetNumber_( Flow, Number ) )
 			qRReturn;
 
 		Numbers.Push( Number );
 
-		SkipSpaces_( Flow );
+		rnccmn::SkipSpaces_( Flow );
 
 		while ( !Flow.EndOfFlow() ) {
 			if ( isdigit( Flow.View() ) ) {
 				Number.Init();
-				if ( !GetNumber_( Flow, Number ) )
+				if ( !rnc::GetNumber_( Flow, Number ) )
 					qRReturn;
 				Numbers.Push( Number );
 
-				SkipSpaces_( Flow );
+				rnccmn::SkipSpaces_( Flow );
 
 			} else {
 				Operator = Flow.Get();
@@ -67,7 +67,7 @@ namespace rncrpn {
 				if ( !rnccmn::Handle_<wnumber, dnumbers>( Numbers, Operator ) )
 					qRReturn;
 
-				SkipSpaces_( Flow );
+				rnccmn::SkipSpaces_( Flow );
 			}
 		}
 

@@ -66,14 +66,6 @@ namespace {
 # define REPORT( m )	sclmisc::ReportAndAbort( message_::m )
 
 		namespace {
-
-			inline void SkipSpaces_( xtf::sIFlow &Flow )
-			{
-				while ( !Flow.EndOfFlow() && ( Flow.View() == ' ' ) )
-					Flow.Get();
-			}
-
-
 			template <typename dnumber, typename wnumber, typename dnumbers, typename wnumbers> bso::sBool Evaluate_(
 				xtf::sIFlow &Flow,
 				dnumber &Number )

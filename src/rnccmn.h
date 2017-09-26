@@ -20,12 +20,22 @@
 #ifndef RNCCMN_INC_
 # define RNCCMN_INC_
 
+# include "rncflt.h"
+# include "rncrtn.h"
+
 # include "bso.h"
 # include "stkbch.h"
+# include "xtf.h"
 
 namespace rnccmn {
 	typedef stkbch::qBSTACKdl( bso::sChar ) dOperators;
 	qW( Operators );
+
+	inline void SkipSpaces_( xtf::sIFlow &Flow )
+	{
+		while ( !Flow.EndOfFlow() && ( Flow.View() == ' ' ) )
+			Flow.Get();
+	}
 
 	template <typename wnumber, typename dnumbers> bso::sBool Handle_(
 		dnumbers &Numbers,
@@ -48,18 +58,18 @@ namespace rnccmn {
 
 		switch ( Operator ) {
 		case '+':
-			Add_( Op1, Op2, Result );
+			rnc::Add_( Op1, Op2, Result );
 			break;
 		case '-':
-			Sub_( Op1, Op2, Result );
+			rnc::Sub_( Op1, Op2, Result );
 			break;
 		case '*':
 		case 'x':
-			Mul_( Op1, Op2, Result );
+			rnc::Mul_( Op1, Op2, Result );
 			break;
 		case ':':
 		case '/':
-			Div_( Op1, Op2, Result );
+			rnc::Div_( Op1, Op2, Result );
 			break;
 		default:
 			Success = false;

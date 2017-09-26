@@ -47,30 +47,30 @@ namespace rncalg {
 		wOperators Operators;
 		bso::sChar Operator = 0;
 	qRB
-		SkipSpaces_( Flow );
+		rnccmn::SkipSpaces_( Flow );
 
 		Numbers.Init();
 		Operators.Init();
 
 		Number.Init();
-		if ( !GetNumber_( Flow, Number ) )
+		if ( !rnc::GetNumber_( Flow, Number ) )
 			qRReturn;
 		Numbers.Push( Number );
 
-		SkipSpaces_( Flow );
+		rnccmn::SkipSpaces_( Flow );
 
 		while ( !Flow.EndOfFlow() ) {
 			Operator = Flow.Get();
 			Operators.Push( Operator );
 
-			SkipSpaces_( Flow );
+			rnccmn::SkipSpaces_( Flow );
 
 			Number.Init();
-			if ( !GetNumber_( Flow, Number ) )
+			if ( !rnc::GetNumber_( Flow, Number ) )
 				qRReturn;
 			Numbers.Push( Number );
 
-			SkipSpaces_( Flow );
+			rnccmn::SkipSpaces_( Flow );
 
 			if ( !Handle_<dnumber, wnumber, dnumbers>( Numbers, Operators ) )
 				qRReturn;
