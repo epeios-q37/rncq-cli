@@ -528,4 +528,8 @@
   <Translation language="fr">Calculateur de nombres rationnels.</Translation>
   <Translation language="en">Rational numbers calculator.</Translation>
  </Translations>
+ <Translations text="BadExpression">
+  <Translation language="fr">Expression incorrecte !</Translation>
+  <Translation language="en">Bad expression !</Translation>
+ </Translations>
 </Locale>

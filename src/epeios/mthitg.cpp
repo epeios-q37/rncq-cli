@@ -37,31 +37,28 @@ namespace {
 	{
 	qRH
 		bso::u32__ Inf = 0UL, Sup = 0x10000UL, Rep = 0x10000UL >> 1;
-		integer Inter, Comp;
+		integer Inter;
 	qRB
-		Inter.Init();
-		Comp.Init();
+		Inter.Init( 0 );
 
-		Inter = 0;
-		Comp = 0;
-
-		for ( ;;) {
-			Inter.Init();
+		for (;;) {
 			Mul_( Den, integer( Rep ), Inter );
-			Sub_( Num, Inter, Inter );
-			if ( Inter < Comp ) {
+			if ( Comp( Num, Inter, true ) < 0 ) {	// 'Num' < 'Inter'.
 				Sup = Rep;
 				Rep = ( Sup + Inf ) >> 1;
-			} else if ( Inter >= Den ) {
-				Inf = Rep;
-				Rep = Inf + ( ( Sup - Inf ) >> 1 );
-				// '( Sup + Inf ) >> 1' doesn't work : overflow.
-				// nor '( Sup >> 1 ) + ( Inf >> 1 )' : loss of precision.
 			} else {
-				Mul_( Result, integer( 0x10000 ), Result );
-				Add_( Result, integer( Rep ), Result );
-				Remainder = Inter;
-				qRReturn;
+				Sub( Num, Inter, Inter );
+				if ( mthitg::Comp( Inter, Den, true ) >= 0 ) {	// 'Inter' >= 'Den'.
+					Inf = Rep;
+					Rep = Inf + ( ( Sup - Inf ) >> 1 );
+					// '( Sup + Inf ) >> 1' doesn't work : overflow.
+					// Nor '( Sup >> 1 ) + ( Inf >> 1 )' : loss of precision.
+				} else {
+					Mul( Result, TenThousandHex, Result );
+					Add( Result, integer( Rep ), Result );
+					Remainder = Inter;
+					qRReturn;
+				}
 			}
 		}
 	qRR
@@ -73,14 +70,17 @@ namespace {
 
 bso::sign__ mthitg::Comp(
 	const integer_ &Op1,
-	const integer_ &Op2 )
+	const integer_ &Op2,
+	bso::sBool IgnoreSign )
 {
 	int Res;
 
-	if ( !Op1.GetSignFlag() && Op2.GetSignFlag() )
-		return 1;
-	else if ( !Op2.GetSignFlag() && Op1.GetSignFlag() )
-		return -1;
+	if ( !IgnoreSign ) {
+		if ( !Op1.GetSignFlag() && Op2.GetSignFlag() )
+			return 1;
+		else if ( !Op2.GetSignFlag() && Op1.GetSignFlag() )
+			return -1;
+	}
 
 	size__ Op1Size = Op1.GetSize();
 	size__ Op2Size = Op2.GetSize();
@@ -91,8 +91,7 @@ bso::sign__ mthitg::Comp(
 		Res = 1;
 	else if ( Op1Size == 0 )	// If true 'Op2Size' also equal to 0.
 		Res = 0;
-	else
-	{
+	else {
 		size__ Indice = Op2Size;
 
 		do Indice--;
@@ -109,7 +108,7 @@ bso::sign__ mthitg::Comp(
 
 	}
 
-	return (int)( Op1.GetSignFlag() ? -Res : Res );
+	return (int)( !IgnoreSign && Op1.GetSignFlag() ? -Res : Res );
 }		
 
 integer_ &mthitg::Add_(
@@ -184,22 +183,23 @@ integer_ &mthitg::Sub_(
 qRH
 	integer Res;
 	unsigned Indice = 0;
-	size__ Limite;
+	size__ Limite = 0, MaxSize = 0, MinSize = 0;
 	bso::u32__ Inter = 0;
 	const integer_ *Max = &Op1, *Min = &Op2;
 qRB
 	Res.Init( 0 );
 
-	if ( *Max < *Min )
-	{
+	if ( Op1.GetSignFlag() )
 		Res.PutSignFlag_( true );
+
+	if ( Comp( *Max, *Min, true ) == -1 ) {
+		Res.PutSignFlag_( !Res.GetSignFlag() );
 		Max = &Op2;
 		Min = &Op1;
 	}
-	else
-		Res.PutSignFlag_( false );
 
-	size__ MaxSize = Max->GetSize(), MinSize = Min->GetSize();
+	MaxSize = Max->GetSize();
+	MinSize = Min->GetSize();
 
 	if ( MaxSize == 0 ) {
 		Result = Res;
@@ -214,17 +214,14 @@ qRB
 
 	while ( Indice < Limite )
 	{
-		if ( Max->Core( Indice ) < ( Inter += Min->Core( Indice ) ) )
-		{
+		if ( Max->Core( Indice ) < ( Inter += Min->Core( Indice ) ) ) {
 			Res.Core.Store(
 				( (base__)( ( Max->Core( Indice ) | ( 1 << 16 ) )
 					- ( Inter & 0xffff ) ) ),
 				Indice );
 
 			Inter = 1;
-		}
-		else
-		{
+		} else {
 			Res.Core.Store( (base__)( Max->Core(Indice) - ( Inter & 0xffff ) ), Indice );
 
 			Inter = 0;
@@ -237,18 +234,14 @@ qRB
 
 	while( Indice < Limite )
 	{
-		if ( Max->Core( Indice ) < Inter )
-
-		{
+		if ( Max->Core( Indice ) < Inter ) {
 			Res.Core.Store(
 				( (base__)( ( Max->Core( Indice ) | ( 1 << 16 ) )
 					- ( Inter & 0xffff ) ) ),
 					Indice );
 
 			Inter = 1;
-		}
-		else
-		{
+		} else {
 			Res.Core.Store( (base__)( Max->Core( Indice ) - ( Inter & 0xffff ) ), Indice );
 
 			Inter = 0;
@@ -281,7 +274,7 @@ qRB
 	Inter.Init();
 	Res.Init( 0 );
 
-	if ( *Max < *Min ) {
+	if ( Comp( *Max, *Min, true ) == -1 ) {
 		Max = &Op2;
 		Min = &Op1;
 	}
@@ -298,13 +291,11 @@ qRB
 	LimiteS = MinSize;
 	LimiteP = MaxSize;
 
-	while ( IndiceS < LimiteS )
-	{
+	while ( IndiceS < LimiteS ) {
 		IndiceP = 0;
 		Retenue = 0;
 
-		while ( IndiceP < LimiteP )
-		{
+		while ( IndiceP < LimiteP )	{
 			Retenue = ( Retenue >> 16 )
 				  + (unsigned long)Max->Core(IndiceP)
 					* (unsigned long)Min->Core(IndiceS);
@@ -320,7 +311,6 @@ qRB
 
 		for( size__ C = 0; C < LimiteS + LimiteP; C++ )
 			Inter.Core.Store( 0, C );
-
 	}
 
 	Res.Adjust_();
@@ -342,14 +332,12 @@ integer_ &mthitg::Div_(
 qRH
 	integer Result;
 	unsigned long I;
-	integer Remainder, TenThousendHex;
+	integer Remainder;
 qRB
 	Result.Init( 0 );
 	Remainder.Init();
-	TenThousendHex.Init( 0x10000 );
 
-	if ( Den > Num )
-	{
+	if ( Comp( Num, Den, true ) == -1 ) {
 		Remainder = Num;
 	} else {
 		size__ DenSize = Den.GetSize(), NumSize = Num.GetSize();
@@ -363,7 +351,7 @@ qRB
 
 		while ( I-- ) {
 			Divide_( Remainder, Den, Result, Remainder );
-			Mul_( Remainder, TenThousendHex, Remainder );
+			Mul_( Remainder, TenThousandHex, Remainder );
 			Add_( Remainder, integer( Num.Core( I ) ), Remainder );
 		}
 
@@ -380,17 +368,14 @@ qRE
 	return Quotient;
 }
 
-
 void mthitg::integer_::Init( flw::sIFlow &Flow )
 {
 	if ( Flow.EndOfFlow() )
 		return;
 qRH
-	integer Ten, Inter;
+	integer Inter;
 	bso::sBool IsNegative = false;
 qRB
-	Ten.Init( 10 );
-
 	switch ( Flow.View() ) {
 	case '-':
 		IsNegative = true;
@@ -664,12 +649,10 @@ txf::text_oflow__ &operator <<(
 	const integer_ &Integer )
 {
 qRH
-	integer I, R, Ten;
+	integer I, R;
 	str::wString String;
 qRB
 	I.Init( Integer );
-
-	Ten.Init( 10 );
 
 	if ( !I ) {
 		Flow << 0UL;
@@ -694,3 +677,7 @@ qRE
 	return Flow;
 }
 #endif
+
+wInteger mthitg::Ten( 10 );
+wInteger mthitg::TenThousandHex( 0x10000 );
+

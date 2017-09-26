@@ -17,11 +17,7 @@
     along with 'RNCq'.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "registry.h"
+#include "rnccmn.h"
 
-using namespace registry;
+using namespace rnccmn;
 
-rEntry registry::parameter::Expression( "Expression", sclrgstry::Parameters );
-rEntry registry::parameter::RPN( "RPN", sclrgstry::Parameters );
-rEntry registry::parameter::ToFloat( "ToFloat", sclrgstry::Parameters );
-rEntry registry::parameter::UseFloat( "UseFloat", sclrgstry::Parameters );

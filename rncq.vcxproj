@@ -21,7 +21,7 @@
   <Import Project="Windows.targets"/>
   <Import Project="Details.props"/>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>65c7c2de-a13f-4b14-88f4-8568095920b8</ProjectGuid>
+    <ProjectGuid>3392a383-d80a-4c4d-a1d4-8016069e3871</ProjectGuid>
     <RootNamespace>rncq</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
@@ -61,6 +61,11 @@
   <ItemGroup>
     <ClCompile Include="src/rncq.cpp"/>
     <ClCompile Include="src/registry.cpp"/>
+    <ClCompile Include="src/rncalg.cpp"/>
+    <ClCompile Include="src/rnccmn.cpp"/>
+    <ClCompile Include="src/rncflt.cpp"/>
+    <ClCompile Include="src/rncrpn.cpp"/>
+    <ClCompile Include="src/rncrtn.cpp"/>
     <ClCompile Include="src/epeios/ags.cpp"/>
     <ClCompile Include="src/epeios/aem.cpp"/>
     <ClCompile Include="src/epeios/bch.cpp"/>

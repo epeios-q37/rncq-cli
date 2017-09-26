@@ -84,10 +84,56 @@ namespace mthrtn {
 
 			operator =( R );
 		}
-		// Handles only integer for now. To modify so it will handle decimal numbers.
-		void Init( const str::dString &Rational )
+		void Init( flw::sIFlow &Flow )
 		{
-			Init( t( Rational ), t( 1 ) );
+			bso::sBool IsNegative = false;
+
+			N.Init( 0 );
+			D.Init( 1 );
+
+			if ( !Flow.EndOfFlow() ) {
+				switch ( Flow.View() ) {
+				case '-':
+					IsNegative = true;
+				case '+':
+					Flow.Skip();
+					break;
+				}
+			}
+
+			while ( !Flow.EndOfFlow() && isdigit( Flow.View() ) ) {
+				Mul( N, mthitg::Ten, N );
+				Add( N, t( Flow.Get() - '0' ), N );
+			}
+
+			if ( !Flow.EndOfFlow() ) {
+				switch ( Flow.View() ) {
+				case '.':
+				case ',':
+					Flow.Skip();
+
+					while ( !Flow.EndOfFlow() && isdigit( Flow.View() ) ) {
+						Mul( N, mthitg::Ten, N );
+						Add( N, t( Flow.Get() - '0' ), N );
+						Mul( D, Ten, D );
+					}
+					break;
+				}
+			}
+
+			if ( IsNegative )
+				N.Negate();
+		}
+		void Init( const str::dString &String )
+		{
+		qRH
+			flx::sStringIFlow Flow;;
+		qRB
+			Flow.Init( String );
+			Init( Flow );
+		qRR
+		qRT
+		qRE
 		}
 		int operator !( void ) const
 		{
@@ -276,11 +322,12 @@ namespace mthrtn {
 		}
 	};
 
-	void Simplify( dRational &dRational );
+	// Reduce the fraction and put the sign, if negative to the numerator.
+	void Normalize( dRational &dRational );
 
 	template <typename t, typename t_> const dRational_<t, t_> &dRational_<t, t_>::Simplify( void )
 	{
-		mthrtn::Simplify( *this );
+		mthrtn::Normalize( *this );
 
 		return *this;
 	}
