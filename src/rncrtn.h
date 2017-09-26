@@ -31,7 +31,7 @@ namespace rncrtn {
 }
 
 namespace rnc {
-	inline bso::sBool GetNumber_(
+	inline bso::sBool GetNumber(
 		xtf::sIFlow &Flow,
 		mthrtn::dRational &Number )
 	{
@@ -40,7 +40,7 @@ namespace rnc {
 		return true;
 	}
 
-	inline void Add_(
+	inline void Add(
 		const mthrtn::dRational &Op1,
 		const mthrtn::dRational &Op2,
 		mthrtn::dRational &Result )
@@ -48,7 +48,7 @@ namespace rnc {
 		mthrtn::Add( Op1, Op2, Result );
 	}
 
-	inline void Sub_(
+	inline void Sub(
 		const mthrtn::dRational &Op1,
 		const mthrtn::dRational &Op2,
 		mthrtn::dRational &Result )
@@ -56,7 +56,7 @@ namespace rnc {
 		mthrtn::Sub( Op1, Op2, Result );
 	}
 
-	inline void Mul_(
+	inline void Mul(
 		const mthrtn::dRational &Op1,
 		const mthrtn::dRational &Op2,
 		mthrtn::dRational &Result )
@@ -64,7 +64,7 @@ namespace rnc {
 		mthrtn::Mul( Op1, Op2, Result );
 	}
 
-	inline void Div_(
+	inline void Div(
 		const mthrtn::dRational &Op1,
 		const mthrtn::dRational &Op2,
 		mthrtn::dRational &Result )
